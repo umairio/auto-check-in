@@ -3,6 +3,7 @@ from celery.schedules import crontab
 from check_in import main
 
 
+
 app = Celery("check_in", broker="redis://redis:6379/0")
 
 app.conf.beat_schedule = {
