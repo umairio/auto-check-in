@@ -1,6 +1,7 @@
 from celery import Celery
 from celery.schedules import crontab
-from check_in import main, temp
+from check_in import main
+
 
 
 app = Celery("check_in", broker="redis://redis:6379/0")

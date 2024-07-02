@@ -1,3 +1,5 @@
+#!/bin/sh
+
 SCHEDULE_FILE="celerybeat-schedule"
 
 if [ -f "$SCHEDULE_FILE" ]; then

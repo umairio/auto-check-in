@@ -72,8 +72,6 @@ def checkin_job(email, passwrd):
             logging.info("Check-in button located and clicked")
         except TimeoutException:
             logging.error("Check-in button not found or already checked-in")
-            driver.quit()
-
             return
 
         logging.info("Job completed successfully")
