@@ -1,0 +1,27 @@
+version: '3.8'
+services:
+  redis:
+    container_name: redis
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    ports:
+      - "6380:6379"
+
+  worker:
+    container_name: celery_worker
+    build: .
+    volumes:
+      - .:/app
+    command: celery -A celeryconfig worker -l INFO
+    depends_on:
+      - redis
+
+  beat:
+    container_name: celery_beat
+    build: .
+    volumes:
+      - .:/app
+    command: ./start_celery_beat.sh
+    depends_on:
+      - redis
+      - worker
