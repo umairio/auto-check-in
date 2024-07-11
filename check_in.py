@@ -5,6 +5,12 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException
 import logging
 from concurrent.futures import ThreadPoolExecutor
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.service import Service
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 logging.basicConfig(
     filename="checkin.log",
@@ -12,15 +18,17 @@ logging.basicConfig(
     format="%(asctime)s %(message)s",
 )
 
+
 def checkin_job(email, passwrd):
     logging.info("Check-in job started")
 
     try:
         options = webdriver.ChromeOptions()
-        options.add_argument('--headless')
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-dev-shm-usage')
-        driver = webdriver.Chrome(options=options)
+        options.add_argument("--headless")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=options)
 
         logging.info("Webdriver initiated")
 
@@ -71,7 +79,7 @@ def checkin_job(email, passwrd):
             checkin.click()
             logging.info("Check-in button located and clicked")
         except TimeoutException:
-            logging.error("Check-in button not found or already checked-in")
+            logging.error(f"Check-in button not found or already checked-in for {email}")
             return
 
         logging.info("Job completed successfully")
@@ -80,6 +88,7 @@ def checkin_job(email, passwrd):
     finally:
         driver.quit()
         logging.info("Webdriver closed")
+
 
 def main():
     email_passwrd_pairs = [

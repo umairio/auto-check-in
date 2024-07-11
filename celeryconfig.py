@@ -3,7 +3,6 @@ from celery.schedules import crontab
 from check_in import main
 
 
-
 app = Celery("check_in", broker="redis://redis:6379/0")
 
 app.conf.beat_schedule = {
@@ -13,6 +12,7 @@ app.conf.beat_schedule = {
     },
 }
 app.conf.timezone = 'Asia/Karachi'
+app.conf.enable_utc = False
 
 @app.task
 def do_checkin():

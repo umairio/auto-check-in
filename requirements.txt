@@ -1,3 +1,5 @@
 selenium
 celery
 redis
+webdriver-manager
+python-dotenv
