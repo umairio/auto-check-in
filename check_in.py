@@ -24,7 +24,7 @@ def checkin_job(email, passwrd):
 
     try:
         options = webdriver.ChromeOptions()
-        options.add_argument("--headless")
+        # options.add_argument("--headless")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         service = Service(ChromeDriverManager().install())
@@ -77,7 +77,7 @@ def checkin_job(email, passwrd):
                 )
             )
             checkin.click()
-            logging.info("Check-in button located and clicked")
+            logging.info(f"{email} checked-in successfully")
         except TimeoutException:
             logging.error(f"Check-in button not found or already checked-in for {email}")
             return
@@ -91,17 +91,29 @@ def checkin_job(email, passwrd):
 
 
 def main():
-    email_passwrd_pairs = [
-        ('Muhammad Umair', 'aaaaaa'),
-        ('Muhammad Iqran', 'lahore12345')
-    ]
+    emails = os.environ.get("EMAILS", "")
+    passwords = os.environ.get("PASSWORDS", "")
+    
+    if not emails or not passwords:
+        logging.error("No emails or passwords found in environment variables")
+        return
 
-    with ThreadPoolExecutor(max_workers=2) as executor:
-        futures = [executor.submit(checkin_job, email, passwrd) for email, passwrd in email_passwrd_pairs]
+    email_list = emails.split(',')
+    password_list = passwords.split(',')
+
+    if len(email_list) != len(password_list):
+        logging.error("The number of emails does not match the number of passwords")
+        return
+
+    email_passwrd_pairs = list(zip(email_list, password_list))
+
+    n = len(email_list)
+
+    with ThreadPoolExecutor(max_workers=n) as executor:
+        futures = [executor.submit(checkin_job, email, password) for email, password in email_passwrd_pairs]
 
     for future in futures:
         future.result()
-
 
 if __name__ == "__main__":
     main()
