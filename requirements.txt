@@ -1,5 +1,5 @@
-selenium
-celery
-redis
-webdriver-manager
-python-dotenv
+selenium==4.22.0
+celery==5.4.0
+redis==5.0.7
+webdriver-manager==4.0.1
+python-dotenv==1.0.1

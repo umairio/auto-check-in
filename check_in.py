@@ -1,22 +1,46 @@
-from selenium import webdriver
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException
 import logging
-from concurrent.futures import ThreadPoolExecutor
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.service import Service
-from dotenv import load_dotenv
 import os
+import smtplib
+from concurrent.futures import ThreadPoolExecutor
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+from dotenv import load_dotenv
+from selenium import webdriver
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+from webdriver_manager.chrome import ChromeDriverManager
 
 load_dotenv()
 
 logging.basicConfig(
     filename="checkin.log",
     level=logging.INFO,
-    format="%(asctime)s %(message)s",
+    format="[%(asctime)s] %(message)s",
 )
+
+
+def send_success_email(email):
+    try:
+        # Create the email
+        message = MIMEMultipart()
+        message["From"] = os.environ.get("MAIL_USERNAME")
+        message["To"] = email
+        message["Subject"] = "Check-In Successful"
+        breakpoint()
+        message.attach(MIMEText(f"Check-in for {email} was successful.", "plain"))
+
+        mail = smtplib.SMTP("smtp.gmail.com", 587)
+        mail.starttls()
+        mail.login(os.environ.get("MAIL_USERNAME"), os.environ.get("MAIL_PASSWORD"))
+        mail.sendmail(os.environ.get("MAIL_USERNAME"), email, message.as_string())
+        mail.quit()
+        logging.info(f"Success email sent to {email}")
+    except Exception as e:
+        logging.error(f"Failed to send email to {email}: {e}")
 
 
 def checkin_job(email, passwrd):
@@ -65,7 +89,7 @@ def checkin_job(email, passwrd):
             )
         )
         RML.click()
-        logging.info("RML button located and clicked and redirecting to dashboard")
+        logging.info("'Remind me later' button located and clicked and redirecting to dashboard")
 
         try:
             checkin = WebDriverWait(driver, 20).until(
@@ -116,4 +140,5 @@ def main():
         future.result()
 
 if __name__ == "__main__":
-    main()
+    # main()
+    send_success_email("umairmateen55@gmail.com")
