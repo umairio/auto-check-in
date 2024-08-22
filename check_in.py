@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+from datetime import date
 from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
@@ -30,8 +31,7 @@ def send_success_email(email):
         message["From"] = os.environ.get("MAIL_USERNAME")
         message["To"] = email
         message["Subject"] = "Check-In Successful"
-        breakpoint()
-        message.attach(MIMEText(f"Check-in for {email} was successful.", "plain"))
+        message.attach(MIMEText(f"Check-in for {email} was successful for {date.today()}", "plain"))
 
         mail = smtplib.SMTP("smtp.gmail.com", 587)
         mail.starttls()
@@ -43,7 +43,7 @@ def send_success_email(email):
         logging.error(f"Failed to send email to {email}: {e}")
 
 
-def checkin_job(email, passwrd):
+def checkin_job(username, passwrd, email):
     logging.info("Check-in job started")
 
     try:
@@ -64,14 +64,14 @@ def checkin_job(email, passwrd):
             EC.visibility_of_element_located((By.ID, "username"))
         )
         logging.info("Username field located")
-        username_field.send_keys(email)
+        username_field.send_keys(username)
 
         password_field = WebDriverWait(driver, 20).until(
             EC.visibility_of_element_located((By.ID, "password"))
         )
         logging.info("Password field located")
 
-        logging.info(f"Attempting to log in with email: {email}")
+        logging.info(f"Attempting to log in with email: {username}")
         password_field.send_keys(passwrd)
 
         login_button = WebDriverWait(driver, 20).until(
@@ -101,9 +101,11 @@ def checkin_job(email, passwrd):
                 )
             )
             checkin.click()
-            logging.info(f"{email} checked-in successfully")
+            if email:
+                send_success_email(email)
+            logging.info(f"{username} checked-in successfully")
         except TimeoutException:
-            logging.error(f"Check-in button not found or already checked-in for {email}")
+            logging.error(f"Check-in button not found or already checked-in for {username}")
             return
 
         logging.info("Job completed successfully")
@@ -115,30 +117,31 @@ def checkin_job(email, passwrd):
 
 
 def main():
-    emails = os.environ.get("EMAILS", "")
+    usernames = os.environ.get("USERNAMES", "")
     passwords = os.environ.get("PASSWORDS", "")
+    emails = os.environ.get("EMAILS", "")
     
-    if not emails or not passwords:
+    if not usernames or not passwords:
         logging.error("No emails or passwords found in environment variables")
         return
 
-    email_list = emails.split(',')
+    username_list = usernames.split(',')
     password_list = passwords.split(',')
+    email_list = emails.split(',')
 
-    if len(email_list) != len(password_list):
+    if len(username_list) != len(password_list):
         logging.error("The number of emails does not match the number of passwords")
         return
 
-    email_passwrd_pairs = list(zip(email_list, password_list))
+    email_passwrd_pairs = list(zip(username_list, password_list, email_list))
 
-    n = len(email_list)
+    n = len(username_list)
 
     with ThreadPoolExecutor(max_workers=n) as executor:
-        futures = [executor.submit(checkin_job, email, password) for email, password in email_passwrd_pairs]
+        futures = [executor.submit(checkin_job, username, password, email) for username, password, email in email_passwrd_pairs]
 
     for future in futures:
         future.result()
 
 if __name__ == "__main__":
-    # main()
-    send_success_email("umairmateen55@gmail.com")
+    main()
