@@ -50,16 +50,20 @@ def send_success_email(email):
         logging.error(f"Failed to send email to {email}: {e}")
 
 
+def initiate_driver():
+    options = webdriver.ChromeOptions()
+    # options.add_argument("--headless")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    service = Service(ChromeDriverManager().install())
+    return webdriver.Chrome(service=service, options=options)
+
+
 def checkin_job(username, passwrd, email):
     logging.info("Check-in job started")
 
     try:
-        options = webdriver.ChromeOptions()
-        # options.add_argument("--headless")
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")
-        service = Service(ChromeDriverManager().install())
-        driver = webdriver.Chrome(service=service, options=options)
+        driver = initiate_driver()
 
         logging.info("Webdriver initiated")
 
@@ -120,32 +124,17 @@ def checkin_job(username, passwrd, email):
 
 
 def main():
-    usernames = os.environ.get("USERNAMES", "")
-    passwords = os.environ.get("PASSWORDS", "")
-    emails = os.environ.get("EMAILS", "")
+    usernames = os.environ.get("USERNAMES", "").split(',')
+    passwords = os.environ.get("PASSWORDS", "").split(',')
+    emails = os.environ.get("EMAILS", "").split(',')
 
-    if not usernames or not passwords:
-        logging.error("No emails or passwords found in environment variables")
-        return
-
-    username_list = usernames.split(',')
-    password_list = passwords.split(',')
-    email_list = emails.split(',')
-
-    if len(username_list) != len(password_list):
+    if len(usernames) != len(passwords):
         logging.error("The number of emails does not match the number of passwords")
         return
 
-    email_passwrd_pairs = list(zip(username_list, password_list, email_list))
-
-    n = len(username_list)
-
-    with ThreadPoolExecutor(max_workers=n) as executor:
-        futures = [executor.submit(checkin_job, username, password, email) for username, password, email in email_passwrd_pairs]
-
-    for future in futures:
-        future.result()
-
-
+    for username, password, email in list(zip(usernames, passwords, emails)):
+        checkin_job(username, password, email)
+    
+    logging.info("All jobs completed successfully")
 if __name__ == "__main__":
     main()
