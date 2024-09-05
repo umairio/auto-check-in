@@ -14,7 +14,9 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 
+
 load_dotenv()
+
 
 logging.basicConfig(
     filename="checkin.log",
@@ -52,11 +54,13 @@ def send_success_email(email):
 
 def initiate_driver():
     options = webdriver.ChromeOptions()
-    # options.add_argument("--headless")
+    options.add_argument("--headless")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-    service = Service(ChromeDriverManager().install())
-    return webdriver.Chrome(service=service, options=options)
+    # service = Service('C:\\Users\\umair\\.wdm\\drivers\\chromedriver\\win64\\128.0.6613.119\\chromedriver.exe')
+    # service = Service(ChromeDriverManager().install())
+    # return webdriver.Chrome(service=service, options=options)
+    return webdriver.Chrome(options=options)
 
 
 def checkin_job(username, passwrd, email):
@@ -90,14 +94,13 @@ def checkin_job(username, passwrd, email):
         )
         login_button.click()
         logging.info("Login button located and clicked and redirecting")
-
-        RML = WebDriverWait(driver, 20).until(
+        WebDriverWait(driver, 20).until(
             EC.element_to_be_clickable((
                 By.XPATH,
                 '//*[@id="wrap"]/div/div/div[2]/div/section/div[2]/div/button',
             ))
         )
-        RML.click()
+        driver.get('https://linkedmatrix.resourceinn.com/#/app/dashboard')
         logging.info("'Remind me later' button located and clicked and redirecting to dashboard")
 
         try:
@@ -136,5 +139,7 @@ def main():
         checkin_job(username, password, email)
     
     logging.info("All jobs completed successfully")
+
+
 if __name__ == "__main__":
     main()
