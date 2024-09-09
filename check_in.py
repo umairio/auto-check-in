@@ -12,7 +12,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
-
+from logging.handlers import SMTPHandler
 
 load_dotenv()
 
@@ -22,6 +22,18 @@ logging.basicConfig(
     level=logging.INFO,
     format="[%(asctime)s] [%(levelname)s] %(message)s",
 )
+mail_handler = SMTPHandler(
+    mailhost=("smtp.gmail.com", 587),
+    fromaddr=os.environ.get("MAIL_USERNAME"),
+    toaddrs="umairmateen55@gmail.com",
+    subject="Check-In Failed",
+    credentials=(os.environ.get("MAIL_USERNAME"), os.environ.get("MAIL_PASSWORD")),
+    secure=(),
+)
+mail_handler.setLevel(logging.ERROR)
+mail_handler.setFormatter(logging.Formatter("[%(asctime)s] [%(levelname)s] %(message)s"))
+logger = logging.getLogger()
+logger.addHandler(mail_handler)
 
 
 def send_success_email(email):
@@ -46,9 +58,9 @@ def send_success_email(email):
         mail.login(os.environ.get("MAIL_USERNAME"), os.environ.get("MAIL_PASSWORD"))
         mail.sendmail(os.environ.get("MAIL_USERNAME"), email, message.as_string())
         mail.quit()
-        logging.info(f"Success email sent to {email}")
+        logger.info(f"Success email sent to {email}")
     except Exception as e:
-        logging.error(f"Failed to send email to {email}: {e}")
+        logger.error(f"Failed to send email to {email}: {e}")
 
 
 def initiate_driver():
@@ -64,36 +76,36 @@ def initiate_driver():
 
 
 def checkin_job(username, passwrd, email):
-    logging.info("Check-in job started")
+    logger.info("Check-in job started")
 
     try:
         driver = initiate_driver()
 
-        logging.info("Webdriver initiated")
+        logger.info("Webdriver initiated")
 
         url = "https://linkedmatrix.resourceinn.com/#/core/login"
         driver.get(url)
-        logging.info(f"Navigated to {url}")
+        logger.info(f"Navigated to {url}")
 
         username_field = WebDriverWait(driver, 20).until(
             EC.visibility_of_element_located((By.ID, "username"))
         )
-        logging.info("Username field located")
+        logger.info("Username field located")
         username_field.send_keys(username)
 
         password_field = WebDriverWait(driver, 20).until(
             EC.visibility_of_element_located((By.ID, "password"))
         )
-        logging.info("Password field located")
+        logger.info("Password field located")
 
-        logging.info(f"Attempting to log in with email: {username}")
+        logger.info(f"Attempting to log in with email: {username}")
         password_field.send_keys(passwrd)
 
         login_button = WebDriverWait(driver, 20).until(
             EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']"))
         )
         login_button.click()
-        logging.info("Login button located and clicked and redirecting")
+        logger.info("Login button located and clicked and redirecting")
         WebDriverWait(driver, 20).until(
             EC.element_to_be_clickable((
                 By.XPATH,
@@ -101,7 +113,7 @@ def checkin_job(username, passwrd, email):
             ))
         )
         driver.get('https://linkedmatrix.resourceinn.com/#/app/dashboard')
-        logging.info("'Remind me later' button located and clicked and redirecting to dashboard")
+        logger.info("'Remind me later' button located and clicked and redirecting to dashboard")
 
         try:
             checkin = WebDriverWait(driver, 20).until(
@@ -113,17 +125,17 @@ def checkin_job(username, passwrd, email):
             checkin.click()
             if email:
                 send_success_email(email)
-            logging.info(f"{username} checked-in successfully")
+            logger.info(f"{username} checked-in successfully")
         except TimeoutException:
-            logging.error(f"Check-in button not found or already checked-in for {username}")
+            logger.error(f"Check-in button not found or already checked-in for {username}")
             return
 
-        logging.info("Job completed successfully")
+        logger.info("Job completed successfully")
     except Exception as e:
-        logging.error(f"An error occurred: {e}")
+        logger.error(f"An error occurred: {e}")
     finally:
         driver.quit()
-        logging.info("Webdriver closed")
+        logger.info("Webdriver closed")
 
 
 def main():
@@ -132,13 +144,13 @@ def main():
     emails = os.environ.get("EMAILS", "").split(',')
 
     if len(usernames) != len(passwords):
-        logging.error("The number of emails does not match the number of passwords")
+        logger.error("The number of emails does not match the number of passwords")
         return
-
+    
     for username, password, email in list(zip(usernames, passwords, emails)):
         checkin_job(username, password, email)
     
-    logging.info("All jobs completed successfully")
+    logger.info("All jobs completed successfully")
 
 
 if __name__ == "__main__":
