@@ -1,7 +1,6 @@
 import logging
 import os
 import smtplib
-from concurrent.futures import ThreadPoolExecutor
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -60,7 +59,8 @@ def initiate_driver():
     # service = Service('C:\\Users\\umair\\.wdm\\drivers\\chromedriver\\win64\\128.0.6613.119\\chromedriver.exe')
     # service = Service(ChromeDriverManager().install())
     # return webdriver.Chrome(service=service, options=options)
-    return webdriver.Chrome(options=options)
+    service = Service("chromedriver")
+    return webdriver.Chrome(service=service, options=options)
 
 
 def checkin_job(username, passwrd, email):
