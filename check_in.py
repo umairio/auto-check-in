@@ -127,7 +127,7 @@ def checkin_job(username, passwrd, email):
                 send_success_email(email)
             logger.info(f"{username} checked-in successfully")
         except TimeoutException:
-            logger.error(f"Check-in button not found or already checked-in for {username}")
+            logger.info(f"Check-in button not found or already checked-in for {username}")
             return
 
         logger.info("Job completed successfully")
