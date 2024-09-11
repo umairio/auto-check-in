@@ -68,11 +68,10 @@ def initiate_driver():
     options.add_argument("--headless")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-    # service = Service('C:\\Users\\umair\\.wdm\\drivers\\chromedriver\\win64\\128.0.6613.119\\chromedriver.exe')
-    # service = Service(ChromeDriverManager().install())
-    # return webdriver.Chrome(service=service, options=options)
-    service = Service("./chromedriver")
-    return webdriver.Chrome(service=service, options=options)
+    path = ChromeDriverManager().install()
+    # service = Service(r'C:\Users\umair\.wdm\drivers\chromedriver\win64\128.0.6613.119\chromedriver.exe')
+    service=Service('/root/.wdm/drivers/chromedriver/linux64/128.0.6613.137/chromedriver-linux64/chromedriver')
+    return webdriver.Chrome(options=options, service=service)
 
 
 def checkin_job(username, passwrd, email):
