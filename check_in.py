@@ -16,6 +16,7 @@ from logging.handlers import SMTPHandler
 
 load_dotenv()
 
+path = ChromeDriverManager().install()
 
 logging.basicConfig(
     filename="checkin.log",
@@ -64,14 +65,16 @@ def send_success_email(email):
 
 
 def initiate_driver():
-    options = webdriver.ChromeOptions()
-    options.add_argument("--headless")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    path = ChromeDriverManager().install()
-    # service = Service(r'C:\Users\umair\.wdm\drivers\chromedriver\win64\128.0.6613.119\chromedriver.exe')
-    service=Service('/root/.wdm/drivers/chromedriver/linux64/128.0.6613.137/chromedriver-linux64/chromedriver')
-    return webdriver.Chrome(options=options, service=service)
+    try:
+        options = webdriver.ChromeOptions()
+        options.add_argument("--headless")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        path = ChromeDriverManager().install()
+        # service = Service(r'C:\Users\umair\.wdm\drivers\chromedriver\win64\128.0.6613.119\chromedriver.exe')
+        return webdriver.Chrome(options=options, service=Service(path.replace('THIRD_PARTY_NOTICES.chromedriver', 'chromedriver')))
+    except Exception as e:
+        logger.error(f"Failed to initiate webdriver: {e}")
 
 
 def checkin_job(username, passwrd, email):
