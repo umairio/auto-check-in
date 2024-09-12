@@ -3,6 +3,7 @@ import os
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.mime.image import MIMEImage
 
 from dotenv import load_dotenv
 from selenium import webdriver
@@ -11,8 +12,12 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.common.action_chains import ActionChains
 from webdriver_manager.chrome import ChromeDriverManager
 from logging.handlers import SMTPHandler
+import traceback
+import time
+
 
 load_dotenv()
 
@@ -37,7 +42,11 @@ logger = logging.getLogger()
 logger.addHandler(mail_handler)
 
 
-def send_success_email(email):
+def send_email(email, image=None):
+    """
+    :param email: str
+    :return: None
+    """
     try:
         # Create the email
         message = MIMEMultipart()
@@ -48,7 +57,17 @@ def send_success_email(email):
         # HTML content
         with open("email.html", "r") as file:
             html_content = file.read()
+        if image:
+            with open(image, "rb") as img:
+                mime_img = MIMEImage(img.read())
+                mime_img.add_header("Content-ID", "<image1>")
+                message.attach(mime_img)
 
+            # Replace the URL in the HTML with the cid reference
+            html_content = html_content.replace(
+                "https://gxowkk.stripocdn.email/content/guids/CABINET_1232eee4cab038122cd07270cd3bb85f/images/70451618316407074.png",
+                "cid:image1"
+            )
 
         # Attach the HTML content to the email
         message.attach(MIMEText(html_content, "html"))
@@ -65,19 +84,35 @@ def send_success_email(email):
 
 
 def initiate_driver():
+    """
+    :return: webdriver
+    """
     try:
         options = webdriver.ChromeOptions()
         options.add_argument("--headless")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
-        path = ChromeDriverManager().install()
         # service = Service(r'C:\Users\umair\.wdm\drivers\chromedriver\win64\128.0.6613.119\chromedriver.exe')
-        return webdriver.Chrome(options=options, service=Service(path.replace('THIRD_PARTY_NOTICES.chromedriver', 'chromedriver')))
+        return webdriver.Chrome(
+            options=options,
+            service=Service(
+                path
+                .replace('/THIRD_PARTY_NOTICES.chromedriver', r'\chromedriver.exe')
+                .replace('THIRD_PARTY_NOTICES.chromedriver', 'chromedriver')
+            )
+        )
     except Exception as e:
         logger.error(f"Failed to initiate webdriver: {e}")
 
 
 def checkin_job(username, passwrd, email):
+    """
+    :param username: str
+    :param passwrd: str
+    :param email: str
+    :return: None 
+
+    """
     logger.info("Check-in job started")
 
     try:
@@ -124,9 +159,17 @@ def checkin_job(username, passwrd, email):
                     '//*[@id="dashboard-here"]/div/div[3]/mark-attendance/section/div[2]/div/div/ng-transclude/div/div[3]/button[1]',
                 ))
             )
+            action = ActionChains(driver)
+            time.sleep(1)
+            action.move_to_element(checkin).perform()
+            time.sleep(1)
             checkin.click()
-            if email:
-                send_success_email(email)
+            time.sleep(2)
+            ss = driver.save_screenshot("checkin.png")
+            if email and ss:
+                send_email(email, image='checkin.png')
+            elif email:
+                send_email(email)
             logger.info(f"{username} checked-in successfully")
         except TimeoutException:
             logger.info(f"Check-in button not found or already checked-in for {username}")
@@ -134,7 +177,7 @@ def checkin_job(username, passwrd, email):
 
         logger.info("Job completed successfully")
     except Exception as e:
-        logger.error(f"An error occurred: {e}")
+        logger.error(f"An error occurred for {username}: {e}\n{traceback.format_exc()}")
     finally:
         driver.quit()
         logger.info("Webdriver closed")
