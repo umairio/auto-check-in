@@ -12,7 +12,7 @@ services:
     build: .
     volumes:
       - .:/app
-    command: celery -A celeryconfig worker -l INFO --logfile checkin.log
+    command: celery -A celeryconfig worker -l INFO --logfile logs.log
     depends_on:
       - redis
 

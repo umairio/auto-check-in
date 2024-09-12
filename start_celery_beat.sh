@@ -8,5 +8,5 @@ if [ -f "$SCHEDULE_FILE" ]; then
 else
     echo "No celerybeat-schedule file found, starting celery-beat..."
 fi
-
+rm -rf logs.log
 exec celery -A celeryconfig beat -l info

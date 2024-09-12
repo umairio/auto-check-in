@@ -21,10 +21,16 @@ import time
 
 load_dotenv()
 
-path = ChromeDriverManager().install()
+path =(
+    ChromeDriverManager().install()
+    .replace('chromedriver-linux64/THIRD_PARTY_NOTICES.chromedriver', 'chromedriver-linux64/chromedriver')
+    .replace('chromedriver-win32/THIRD_PARTY_NOTICES.chromedriver', r'chromedriver-win32\chromedriver.exe')
+)
+if "linux" in path:
+    os.chmod(path, 0o755)
 
 logging.basicConfig(
-    filename="checkin.log",
+    filename="logs.log",
     level=logging.INFO,
     format="[%(asctime)s] [%(levelname)s] %(message)s",
 )
@@ -87,22 +93,15 @@ def initiate_driver():
     """
     :return: webdriver
     """
-    try:
-        options = webdriver.ChromeOptions()
-        options.add_argument("--headless")
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")
-        # service = Service(r'C:\Users\umair\.wdm\drivers\chromedriver\win64\128.0.6613.119\chromedriver.exe')
-        return webdriver.Chrome(
-            options=options,
-            service=Service(
-                path
-                .replace('/THIRD_PARTY_NOTICES.chromedriver', r'\chromedriver.exe')
-                .replace('THIRD_PARTY_NOTICES.chromedriver', 'chromedriver')
-            )
-        )
-    except Exception as e:
-        logger.error(f"Failed to initiate webdriver: {e}")
+    options = webdriver.ChromeOptions()
+    options.add_argument("--headless")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    # service = Service(r'C:\Users\umair\.wdm\drivers\chromedriver\win64\128.0.6613.119\chromedriver.exe')
+    return webdriver.Chrome(
+        options=options,
+        service=Service(path)
+    )
 
 
 def checkin_job(username, passwrd, email):
