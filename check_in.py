@@ -15,13 +15,12 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.action_chains import ActionChains
 from webdriver_manager.chrome import ChromeDriverManager
 from logging.handlers import SMTPHandler
-import traceback
 import time
 
 
 load_dotenv()
 
-path =(
+path = (
     ChromeDriverManager().install()
     .replace('chromedriver-linux64/THIRD_PARTY_NOTICES.chromedriver', 'chromedriver-linux64/chromedriver')
     .replace('chromedriver-win32/THIRD_PARTY_NOTICES.chromedriver', r'chromedriver-win32\chromedriver.exe')
@@ -35,7 +34,7 @@ logging.basicConfig(
     format="[%(asctime)s] [%(levelname)s] %(message)s",
 )
 mail_handler = SMTPHandler(
-    mailhost=("smtp.gmail.com", 587),
+    mailhost=("smtp.gmail.com", 465),
     fromaddr=os.environ.get("MAIL_USERNAME"),
     toaddrs="umairmateen55@gmail.com",
     subject="Check-In Failed",
@@ -50,11 +49,11 @@ logger.addHandler(mail_handler)
 
 def send_email(email, image=None):
     """
+    :param image: str
     :param email: str
     :return: None
     """
     try:
-        # Create the email
         message = MIMEMultipart()
         message["From"] = os.environ.get("MAIL_USERNAME")
         message["To"] = email
@@ -62,23 +61,17 @@ def send_email(email, image=None):
 
         # HTML content
         with open("email.html", "r") as file:
-            html_content = file.read()
+            template = file.read()
         if image:
             with open(image, "rb") as img:
                 mime_img = MIMEImage(img.read())
                 mime_img.add_header("Content-ID", "<image1>")
                 message.attach(mime_img)
-
-            # Replace the URL in the HTML with the cid reference
-            html_content = html_content.replace(
+            template = template.replace(
                 "https://gxowkk.stripocdn.email/content/guids/CABINET_1232eee4cab038122cd07270cd3bb85f/images/70451618316407074.png",
                 "cid:image1"
             )
-
-        # Attach the HTML content to the email
-        message.attach(MIMEText(html_content, "html"))
-
-        # Send the email
+        message.attach(MIMEText(template, "html"))
         mail = smtplib.SMTP("smtp.gmail.com", 587)
         mail.starttls()
         mail.login(os.environ.get("MAIL_USERNAME"), os.environ.get("MAIL_PASSWORD"))
@@ -97,7 +90,6 @@ def initiate_driver():
     options.add_argument("--headless")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-    # service = Service(r'C:\Users\umair\.wdm\drivers\chromedriver\win64\128.0.6613.119\chromedriver.exe')
     return webdriver.Chrome(
         options=options,
         service=Service(path)
@@ -112,7 +104,8 @@ def checkin_job(username, passwrd, email):
     :return: None 
 
     """
-    logger.info("Check-in job started")
+    logger.info(f"Check-in job started for: {username}")
+    result = str
 
     try:
         driver = initiate_driver()
@@ -149,7 +142,7 @@ def checkin_job(username, passwrd, email):
             ))
         )
         driver.get('https://linkedmatrix.resourceinn.com/#/app/dashboard')
-        logger.info("'Remind me later' button located and clicked and redirecting to dashboard")
+        logger.info("Redirecting to dashboard")
 
         try:
             checkin = WebDriverWait(driver, 20).until(
@@ -164,22 +157,43 @@ def checkin_job(username, passwrd, email):
             time.sleep(1)
             checkin.click()
             time.sleep(2)
+            result = "Success"
+            logger.info(f"{username} checked-in successfully")
+        except TimeoutException:
+            try:
+                checkout = WebDriverWait(driver, 20).until(
+                    EC.element_to_be_clickable((
+                        By.XPATH,
+                        '//*[@id="dashboard-here"]/div/div[3]/mark-attendance/section/div[2]/div/div/ng-transclude/div/div[3]/button[2]',
+                    ))
+                )
+                if checkout:
+                    action = ActionChains(driver)
+                    time.sleep(1)
+                    action.move_to_element(checkout).perform()
+                    time.sleep(1)
+                    result = "Success"
+                    logger.info(f"Already checked-in for {username}")
+            except Exception as e:
+                logger.info(e)
+                result = "Failed"
+                return result
             ss = driver.save_screenshot("checkin.png")
+        try:
             if email and ss:
                 send_email(email, image='checkin.png')
             elif email:
                 send_email(email)
-            logger.info(f"{username} checked-in successfully")
-        except TimeoutException:
-            logger.info(f"Check-in button not found or already checked-in for {username}")
-            return
-
+        except Exception as e:
+            logger.error(f"An error occurred while sending email: {e}")
         logger.info("Job completed successfully")
     except Exception as e:
-        logger.error(f"An error occurred for {username}: {e}\n{traceback.format_exc()}")
+        result = "Failed"
+        logger.error(f"An error occurred for {username}: {e}")
     finally:
         driver.quit()
         logger.info("Webdriver closed")
+        return result
 
 
 def main():
@@ -190,12 +204,13 @@ def main():
     if len(usernames) != len(passwords):
         logger.error("The number of emails does not match the number of passwords")
         return
-    
+    result = dict()
     for username, password, email in list(zip(usernames, passwords, emails)):
-        checkin_job(username, password, email)
+        done = checkin_job(username, password, email)
+        result[username] = done
     
-    logger.info("All jobs completed successfully")
-
+    logger.info(f"All jobs completed successfully {result}")
+    print(result)
 
 if __name__ == "__main__":
     main()
