@@ -172,15 +172,16 @@ def checkin_job(username, passwrd, email):
                     time.sleep(1)
                     action.move_to_element(checkout).perform()
                     time.sleep(1)
-                    result = "Success"
+                    result = "skip"
                     logger.info(f"Already checked-in for {username}")
             except Exception as e:
                 logger.info(e)
                 result = "Failed"
                 return result
-            ss = driver.save_screenshot("checkin.png")
+        ss = driver.save_screenshot("checkin.png")
         try:
             if email and ss:
+                logger.info(f"Screenshot captured for {username}")             
                 send_email(email, image='checkin.png')
             elif email:
                 send_email(email)
