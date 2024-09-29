@@ -34,7 +34,7 @@ logging.basicConfig(
     format="[%(asctime)s] [%(levelname)s] %(message)s",
 )
 mail_handler = SMTPHandler(
-    mailhost=("smtp.gmail.com", 465),
+    mailhost=("smtp.gmail.com", 587),
     fromaddr=os.environ.get("MAIL_USERNAME"),
     toaddrs="umairmateen55@gmail.com",
     subject="Check-In Failed",
@@ -72,7 +72,7 @@ def send_email(email, image=None):
                 "cid:image1"
             )
         message.attach(MIMEText(template, "html"))
-        mail = smtplib.SMTP("smtp.gmail.com", 587)
+        mail = smtplib.SMTP("smtp.gmail.com", 587, timeout=30)
         mail.starttls()
         mail.login(os.environ.get("MAIL_USERNAME"), os.environ.get("MAIL_PASSWORD"))
         mail.sendmail(os.environ.get("MAIL_USERNAME"), email, message.as_string())
@@ -135,13 +135,13 @@ def checkin_job(username, passwrd, email):
         )
         login_button.click()
         logger.info("Login button located and clicked and redirecting")
-        WebDriverWait(driver, 20).until(
+        rml = WebDriverWait(driver, 20).until(
             EC.element_to_be_clickable((
                 By.XPATH,
                 '//*[@id="wrap"]/div/div/div[2]/div/section/div[2]/div/button',
             ))
         )
-        driver.get('https://linkedmatrix.resourceinn.com/#/app/dashboard')
+        rml.click()
         logger.info("Redirecting to dashboard")
 
         try:
@@ -207,7 +207,7 @@ def main():
         return
     result = dict()
     for username, password, email in list(zip(usernames, passwords, emails)):
-        done = checkin_job(username, password, email)
+        done = checkin_job(username, password, email) if not "Moin" in username else "skip"
         result[username] = done
     
     logger.info(f"All jobs completed successfully {result}")
