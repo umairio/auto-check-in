@@ -1,9 +1,5 @@
 import logging
 import os
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.image import MIMEImage
 
 from dotenv import load_dotenv
 from selenium import webdriver
@@ -16,6 +12,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from webdriver_manager.chrome import ChromeDriverManager
 from logging.handlers import SMTPHandler
 import time
+from discobot import send_discord_message
 
 
 load_dotenv()
@@ -47,39 +44,6 @@ logger = logging.getLogger()
 logger.addHandler(mail_handler)
 
 
-def send_email(email, image=None):
-    """
-    :param image: str
-    :param email: str
-    :return: None
-    """
-    try:
-        message = MIMEMultipart()
-        message["From"] = os.environ.get("MAIL_USERNAME")
-        message["To"] = email
-        message["Subject"] = "Check-In Successful"
-
-        # HTML content
-        with open("email.html", "r") as file:
-            template = file.read()
-        if image:
-            with open(image, "rb") as img:
-                mime_img = MIMEImage(img.read())
-                mime_img.add_header("Content-ID", "<image1>")
-                message.attach(mime_img)
-            template = template.replace(
-                "https://gxowkk.stripocdn.email/content/guids/CABINET_1232eee4cab038122cd07270cd3bb85f/images/70451618316407074.png",
-                "cid:image1"
-            )
-        message.attach(MIMEText(template, "html"))
-        mail = smtplib.SMTP("smtp.gmail.com", 587, timeout=30)
-        mail.starttls()
-        mail.login(os.environ.get("MAIL_USERNAME"), os.environ.get("MAIL_PASSWORD"))
-        mail.sendmail(os.environ.get("MAIL_USERNAME"), email, message.as_string())
-        mail.quit()
-        logger.info(f"Success email sent to {email}")
-    except Exception as e:
-        logger.error(f"Failed to send email to {email}: {e}")
 
 
 def initiate_driver():
@@ -92,15 +56,14 @@ def initiate_driver():
     options.add_argument("--disable-dev-shm-usage")
     return webdriver.Chrome(
         options=options,
-        service=Service(path)
+        service=Service(path),
     )
 
 
-def checkin_job(username, passwrd, email):
+def checkin_job(username, passwrd):
     """
     :param username: str
     :param passwrd: str
-    :param email: str
     :return: None 
 
     """
@@ -127,7 +90,7 @@ def checkin_job(username, passwrd, email):
         )
         logger.info("Password field located")
 
-        logger.info(f"Attempting to log in with email: {username}")
+        logger.info(f"Attempting to log in for: {username}")
         password_field.send_keys(passwrd)
 
         login_button = WebDriverWait(driver, 20).until(
@@ -136,12 +99,11 @@ def checkin_job(username, passwrd, email):
         login_button.click()
         logger.info("Login button located and clicked and redirecting")
         rml = WebDriverWait(driver, 20).until(
-            EC.element_to_be_clickable((
-                By.XPATH,
-                '//*[@id="wrap"]/div/div/div[2]/div/section/div[2]/div/button',
-            ))
+            EC.element_to_be_clickable((By.XPATH,
+                '//*[@id="wrap"]/div/div/div[2]/div/section/div[2]/div/button',))
         )
         rml.click()
+        driver.get("https://linkedmatrix.resourceinn.com/#/app/dashboard")
         logger.info("Redirecting to dashboard")
 
         try:
@@ -180,13 +142,13 @@ def checkin_job(username, passwrd, email):
                 return result
         ss = driver.save_screenshot("checkin.png")
         try:
-            if email and ss:
+            if ss:
                 logger.info(f"Screenshot captured for {username}")             
-                send_email(email, image='checkin.png')
-            elif email:
-                send_email(email)
+                send_discord_message(f"{username} Checked-in successfully", image='checkin.png')
+            else:
+                send_discord_message(f"{username} Checked-in successfully")
         except Exception as e:
-            logger.error(f"An error occurred while sending email: {e}")
+            logger.error(f"An error occurred while sending message: {e}")
         logger.info("Job completed successfully")
     except Exception as e:
         result = "Failed"
@@ -201,13 +163,12 @@ def main():
     usernames = os.environ.get("USERNAMES", "").split(',')
     passwords = os.environ.get("PASSWORDS", "").split(',')
     emails = os.environ.get("EMAILS", "").split(',')
-
     if len(usernames) != len(passwords):
         logger.error("The number of emails does not match the number of passwords")
         return
     result = dict()
-    for username, password, email in list(zip(usernames, passwords, emails)):
-        done = checkin_job(username, password, email) if not "Moin" in username else "skip"
+    for username, password in list(zip(usernames, passwords)):
+        done = checkin_job(username, password)
         result[username] = done
     
     logger.info(f"All jobs completed successfully {result}")
