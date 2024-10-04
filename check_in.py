@@ -1,19 +1,21 @@
 import logging
 import os
+import time
+from logging.handlers import SMTPHandler
+from pprint import pprint
 
 from dotenv import load_dotenv
 from selenium import webdriver
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import (StaleElementReferenceException,
+                                        TimeoutException)
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.common.action_chains import ActionChains
 from webdriver_manager.chrome import ChromeDriverManager
-from logging.handlers import SMTPHandler
-import time
-from discobot import send_discord_message
 
+from discobot import send_discord_message
 
 load_dotenv()
 
@@ -54,10 +56,9 @@ def initiate_driver():
     options.add_argument("--headless")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-    return webdriver.Chrome(
-        options=options,
-        service=Service(path),
-    )
+    driver = webdriver.Chrome(options=options, service=Service(path))
+    driver.execute_script("document.body.style.zoom='70%'")
+    return driver
 
 
 def checkin_job(username, passwrd):
@@ -67,6 +68,24 @@ def checkin_job(username, passwrd):
     :return: None 
 
     """
+    def checkin(driver):
+        driver.execute_script("document.body.style.zoom='70%'")
+        checkin = WebDriverWait(driver, 20).until(
+                    EC.element_to_be_clickable((
+                        By.XPATH,
+                        '//*[@id="dashboard-here"]/div/div[3]/mark-attendance/section/div[2]/div/div/ng-transclude/div/div[3]/button[1]',
+                    ))
+                )
+        action = ActionChains(driver)
+        time.sleep(1)
+        action.move_to_element(checkin).perform()
+        time.sleep(1)
+        checkin.click()
+        time.sleep(2)
+        result = "Success"
+        logger.info(f"{username} checked-in successfully")
+        return result, driver
+    
     logger.info(f"Check-in job started for: {username}")
     result = str
 
@@ -103,24 +122,11 @@ def checkin_job(username, passwrd):
                 '//*[@id="wrap"]/div/div/div[2]/div/section/div[2]/div/button',))
         )
         rml.click()
-        driver.get("https://linkedmatrix.resourceinn.com/#/app/dashboard")
-        logger.info("Redirecting to dashboard")
-
+        # driver.get("https://linkedmatrix.resourceinn.com/#/app/dashboard")
+        # logger.info("Redirecting to dashboard")
+        time.sleep(5)
         try:
-            checkin = WebDriverWait(driver, 20).until(
-                EC.element_to_be_clickable((
-                    By.XPATH,
-                    '//*[@id="dashboard-here"]/div/div[3]/mark-attendance/section/div[2]/div/div/ng-transclude/div/div[3]/button[1]',
-                ))
-            )
-            action = ActionChains(driver)
-            time.sleep(1)
-            action.move_to_element(checkin).perform()
-            time.sleep(1)
-            checkin.click()
-            time.sleep(2)
-            result = "Success"
-            logger.info(f"{username} checked-in successfully")
+            result, driver = checkin(driver)
         except TimeoutException:
             try:
                 checkout = WebDriverWait(driver, 20).until(
@@ -140,15 +146,22 @@ def checkin_job(username, passwrd):
                 logger.info(e)
                 result = "Failed"
                 return result
+        except StaleElementReferenceException:
+            logger.info("Element not found, Refreshing the page")
+            driver.get("https://linkedmatrix.resourceinn.com/#/app/dashboard")
+            result, driver = checkin(driver)
         ss = driver.save_screenshot("checkin.png")
-        try:
-            if ss:
-                logger.info(f"Screenshot captured for {username}")             
-                send_discord_message(f"{username} Checked-in successfully", image='checkin.png')
-            else:
-                send_discord_message(f"{username} Checked-in successfully")
-        except Exception as e:
-            logger.error(f"An error occurred while sending message: {e}")
+
+        #send discord messages
+        # try:
+        #     if ss:
+        #         logger.info(f"Screenshot captured for {username}")             
+        #         send_discord_message(f"{username} Checked-in successfully", image='checkin.png')
+        #     else:
+        #         send_discord_message(f"{username} Checked-in successfully")
+        # except Exception as e:
+        #     logger.error(f"An error occurred while sending message: {e}")
+
         logger.info("Job completed successfully")
     except Exception as e:
         result = "Failed"
@@ -159,20 +172,29 @@ def checkin_job(username, passwrd):
         return result
 
 
-def main():
+def main(result = None):
     usernames = os.environ.get("USERNAMES", "").split(',')
     passwords = os.environ.get("PASSWORDS", "").split(',')
-    emails = os.environ.get("EMAILS", "").split(',')
+    # emails = os.environ.get("EMAILS", "").split(',')
+    leave_users = os.environ.get("LEAVE_USERS", "").split(',')
     if len(usernames) != len(passwords):
         logger.error("The number of emails does not match the number of passwords")
         return
-    result = dict()
-    for username, password in list(zip(usernames, passwords)):
-        done = checkin_job(username, password)
-        result[username] = done
-    
+    data = list(zip(usernames, passwords))
+    if not result:
+        for username, password in data:
+            result[username] = checkin_job(username, password) if username not in leave_users else "leave"
+    pprint(result)
+
+    # if failed retry
+    if "Failed" in result.values():
+        logger.info("Retrying failed jobs")
+        for username, password in data:
+            if result[username] == "Failed":
+                result[username] = checkin_job(username, password)
+    pprint(result)
+
     logger.info(f"All jobs completed successfully {result}")
-    print(result)
 
 if __name__ == "__main__":
-    main()
+    main(result = dict())

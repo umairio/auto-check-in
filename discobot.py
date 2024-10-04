@@ -1,5 +1,7 @@
-import requests
 import os
+
+import requests
+
 
 def send_discord_message(content, image=None):
     """
@@ -31,6 +33,7 @@ def send_discord_message(content, image=None):
         
         if response.status_code in [200, 204]:
             print(f"Message sent successfully: {content}")
+            os.remove(image)
         else:
             print(f"Failed to send message: {response.status_code} - {response.text}")
     except Exception as e:

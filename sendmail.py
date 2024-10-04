@@ -1,10 +1,12 @@
-import yagmail
+import os
 import smtplib
+from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.mime.image import MIMEImage
-import os
+
+import yagmail
 from dotenv import load_dotenv
+
 load_dotenv()
 def send_mail(email, image=None):
     """
