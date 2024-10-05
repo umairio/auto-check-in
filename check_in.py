@@ -71,11 +71,11 @@ def checkin_job(username, passwrd):
     def checkin(driver):
         driver.execute_script("document.body.style.zoom='70%'")
         checkin = WebDriverWait(driver, 20).until(
-                    EC.element_to_be_clickable((
-                        By.XPATH,
-                        '//*[@id="dashboard-here"]/div/div[3]/mark-attendance/section/div[2]/div/div/ng-transclude/div/div[3]/button[1]',
-                    ))
-                )
+            EC.element_to_be_clickable((
+                By.XPATH,
+                '//*[@id="dashboard-here"]/div/div[3]/mark-attendance/section/div[2]/div/div/ng-transclude/div/div[3]/button[1]',
+            ))
+        )
         action = ActionChains(driver)
         time.sleep(1)
         action.move_to_element(checkin).perform()
@@ -124,7 +124,6 @@ def checkin_job(username, passwrd):
         rml.click()
         # driver.get("https://linkedmatrix.resourceinn.com/#/app/dashboard")
         # logger.info("Redirecting to dashboard")
-        time.sleep(5)
         try:
             result, driver = checkin(driver)
         except TimeoutException:
@@ -147,20 +146,21 @@ def checkin_job(username, passwrd):
                 result = "Failed"
                 return result
         except StaleElementReferenceException:
-            logger.info("Element not found, Refreshing the page")
+            logger.info("stale element reference, Refreshing the page")
             driver.get("https://linkedmatrix.resourceinn.com/#/app/dashboard")
             result, driver = checkin(driver)
+        driver.execute_script("document.body.style.zoom='70%'")
         ss = driver.save_screenshot("checkin.png")
 
         #send discord messages
-        # try:
-        #     if ss:
-        #         logger.info(f"Screenshot captured for {username}")             
-        #         send_discord_message(f"{username} Checked-in successfully", image='checkin.png')
-        #     else:
-        #         send_discord_message(f"{username} Checked-in successfully")
-        # except Exception as e:
-        #     logger.error(f"An error occurred while sending message: {e}")
+        try:
+            if ss:
+                logger.info(f"Screenshot captured for {username}")             
+                send_discord_message(f"{username} Checked-in successfully", image='checkin.png')
+            else:
+                send_discord_message(f"{username} Checked-in successfully")
+        except Exception as e:
+            logger.error(f"An error occurred while sending message: {e}")
 
         logger.info("Job completed successfully")
     except Exception as e:
