@@ -4,3 +4,5 @@ redis==5.0.7
 selenium==4.22.0
 webdriver-manager==4.0.1
 websocket-client==1.8.0
+yagmail
+requests

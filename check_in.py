@@ -1,22 +1,21 @@
 import logging
 import os
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.image import MIMEImage
+import time
+from logging.handlers import SMTPHandler
+from pprint import pprint
 
 from dotenv import load_dotenv
 from selenium import webdriver
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import (StaleElementReferenceException,
+                                        TimeoutException)
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.common.action_chains import ActionChains
 from webdriver_manager.chrome import ChromeDriverManager
-from logging.handlers import SMTPHandler
-import time
 
+from discobot import send_discord_message
 
 load_dotenv()
 
@@ -34,7 +33,7 @@ logging.basicConfig(
     format="[%(asctime)s] [%(levelname)s] %(message)s",
 )
 mail_handler = SMTPHandler(
-    mailhost=("smtp.gmail.com", 465),
+    mailhost=("smtp.gmail.com", 587),
     fromaddr=os.environ.get("MAIL_USERNAME"),
     toaddrs="umairmateen55@gmail.com",
     subject="Check-In Failed",
@@ -47,39 +46,6 @@ logger = logging.getLogger()
 logger.addHandler(mail_handler)
 
 
-def send_email(email, image=None):
-    """
-    :param image: str
-    :param email: str
-    :return: None
-    """
-    try:
-        message = MIMEMultipart()
-        message["From"] = os.environ.get("MAIL_USERNAME")
-        message["To"] = email
-        message["Subject"] = "Check-In Successful"
-
-        # HTML content
-        with open("email.html", "r") as file:
-            template = file.read()
-        if image:
-            with open(image, "rb") as img:
-                mime_img = MIMEImage(img.read())
-                mime_img.add_header("Content-ID", "<image1>")
-                message.attach(mime_img)
-            template = template.replace(
-                "https://gxowkk.stripocdn.email/content/guids/CABINET_1232eee4cab038122cd07270cd3bb85f/images/70451618316407074.png",
-                "cid:image1"
-            )
-        message.attach(MIMEText(template, "html"))
-        mail = smtplib.SMTP("smtp.gmail.com", 587)
-        mail.starttls()
-        mail.login(os.environ.get("MAIL_USERNAME"), os.environ.get("MAIL_PASSWORD"))
-        mail.sendmail(os.environ.get("MAIL_USERNAME"), email, message.as_string())
-        mail.quit()
-        logger.info(f"Success email sent to {email}")
-    except Exception as e:
-        logger.error(f"Failed to send email to {email}: {e}")
 
 
 def initiate_driver():
@@ -90,20 +56,36 @@ def initiate_driver():
     options.add_argument("--headless")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-    return webdriver.Chrome(
-        options=options,
-        service=Service(path)
-    )
+    driver = webdriver.Chrome(options=options, service=Service(path))
+    driver.execute_script("document.body.style.zoom='70%'")
+    return driver
 
 
-def checkin_job(username, passwrd, email):
+def checkin_job(username, passwrd):
     """
     :param username: str
     :param passwrd: str
-    :param email: str
     :return: None 
 
     """
+    def checkin(driver):
+        driver.execute_script("document.body.style.zoom='70%'")
+        checkin = WebDriverWait(driver, 20).until(
+            EC.element_to_be_clickable((
+                By.XPATH,
+                '//*[@id="dashboard-here"]/div/div[3]/mark-attendance/section/div[2]/div/div/ng-transclude/div/div[3]/button[1]',
+            ))
+        )
+        action = ActionChains(driver)
+        time.sleep(1)
+        action.move_to_element(checkin).perform()
+        time.sleep(1)
+        checkin.click()
+        time.sleep(2)
+        result = "Success"
+        logger.info(f"{username} checked-in successfully")
+        return result, driver
+    
     logger.info(f"Check-in job started for: {username}")
     result = str
 
@@ -127,7 +109,7 @@ def checkin_job(username, passwrd, email):
         )
         logger.info("Password field located")
 
-        logger.info(f"Attempting to log in with email: {username}")
+        logger.info(f"Attempting to log in for: {username}")
         password_field.send_keys(passwrd)
 
         login_button = WebDriverWait(driver, 20).until(
@@ -135,30 +117,15 @@ def checkin_job(username, passwrd, email):
         )
         login_button.click()
         logger.info("Login button located and clicked and redirecting")
-        WebDriverWait(driver, 20).until(
-            EC.element_to_be_clickable((
-                By.XPATH,
-                '//*[@id="wrap"]/div/div/div[2]/div/section/div[2]/div/button',
-            ))
+        rml = WebDriverWait(driver, 20).until(
+            EC.element_to_be_clickable((By.XPATH,
+                '//*[@id="wrap"]/div/div/div[2]/div/section/div[2]/div/button',))
         )
-        driver.get('https://linkedmatrix.resourceinn.com/#/app/dashboard')
-        logger.info("Redirecting to dashboard")
-
+        rml.click()
+        # driver.get("https://linkedmatrix.resourceinn.com/#/app/dashboard")
+        # logger.info("Redirecting to dashboard")
         try:
-            checkin = WebDriverWait(driver, 20).until(
-                EC.element_to_be_clickable((
-                    By.XPATH,
-                    '//*[@id="dashboard-here"]/div/div[3]/mark-attendance/section/div[2]/div/div/ng-transclude/div/div[3]/button[1]',
-                ))
-            )
-            action = ActionChains(driver)
-            time.sleep(1)
-            action.move_to_element(checkin).perform()
-            time.sleep(1)
-            checkin.click()
-            time.sleep(2)
-            result = "Success"
-            logger.info(f"{username} checked-in successfully")
+            result, driver = checkin(driver)
         except TimeoutException:
             try:
                 checkout = WebDriverWait(driver, 20).until(
@@ -178,15 +145,23 @@ def checkin_job(username, passwrd, email):
                 logger.info(e)
                 result = "Failed"
                 return result
+        except StaleElementReferenceException:
+            logger.info("stale element reference, Refreshing the page")
+            driver.get("https://linkedmatrix.resourceinn.com/#/app/dashboard")
+            result, driver = checkin(driver)
+        driver.execute_script("document.body.style.zoom='70%'")
         ss = driver.save_screenshot("checkin.png")
+
+        #send discord messages
         try:
-            if email and ss:
+            if ss:
                 logger.info(f"Screenshot captured for {username}")             
-                send_email(email, image='checkin.png')
-            elif email:
-                send_email(email)
+                send_discord_message(f"{username} Checked-in successfully", image='checkin.png')
+            else:
+                send_discord_message(f"{username} Checked-in successfully")
         except Exception as e:
-            logger.error(f"An error occurred while sending email: {e}")
+            logger.error(f"An error occurred while sending message: {e}")
+
         logger.info("Job completed successfully")
     except Exception as e:
         result = "Failed"
@@ -197,21 +172,29 @@ def checkin_job(username, passwrd, email):
         return result
 
 
-def main():
+def main(result = None):
     usernames = os.environ.get("USERNAMES", "").split(',')
     passwords = os.environ.get("PASSWORDS", "").split(',')
-    emails = os.environ.get("EMAILS", "").split(',')
-
+    # emails = os.environ.get("EMAILS", "").split(',')
+    leave_users = os.environ.get("LEAVE_USERS", "").split(',')
     if len(usernames) != len(passwords):
         logger.error("The number of emails does not match the number of passwords")
         return
-    result = dict()
-    for username, password, email in list(zip(usernames, passwords, emails)):
-        done = checkin_job(username, password, email)
-        result[username] = done
-    
+    data = list(zip(usernames, passwords))
+    if not result:
+        for username, password in data:
+            result[username] = checkin_job(username, password) if username not in leave_users else "leave"
+    pprint(result)
+
+    # if failed retry
+    if "Failed" in result.values():
+        logger.info("Retrying failed jobs")
+        for username, password in data:
+            if result[username] == "Failed":
+                result[username] = checkin_job(username, password)
+    pprint(result)
+
     logger.info(f"All jobs completed successfully {result}")
-    print(result)
 
 if __name__ == "__main__":
-    main()
+    main(result = dict())
