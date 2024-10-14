@@ -39,3 +39,5 @@ def send_discord_message(content, image=None):
     except Exception as e:
         print(f"An error occurred: {e}")
 
+if __name__ == "__main__":
+    send_discord_message("<@1027111068704714833> test message")

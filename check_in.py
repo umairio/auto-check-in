@@ -129,11 +129,9 @@ def checkin_job(username, passwrd):
         except TimeoutException:
             try:
                 checkout = WebDriverWait(driver, 20).until(
-                    EC.element_to_be_clickable((
-                        By.XPATH,
-                        '//*[@id="dashboard-here"]/div/div[3]/mark-attendance/section/div[2]/div/div/ng-transclude/div/div[3]/button[2]',
-                    ))
-                )
+                EC.element_to_be_clickable((By.XPATH,
+                    '//*[@id="dashboard-here"]/div/div[3]/mark-attendance/section/div[2]/div/div/ng-transclude/div/div[3]/button[2]',
+                )))
                 if checkout:
                     action = ActionChains(driver)
                     time.sleep(1)
@@ -184,7 +182,7 @@ def main(result = None):
     if not result:
         for username, password in data:
             result[username] = checkin_job(username, password) if username not in leave_users else "leave"
-    pprint(result)
+        pprint(result)
 
     # if failed retry
     if "Failed" in result.values():
@@ -192,7 +190,7 @@ def main(result = None):
         for username, password in data:
             if result[username] == "Failed":
                 result[username] = checkin_job(username, password)
-    pprint(result)
+        pprint(result)
 
     logger.info(f"All jobs completed successfully {result}")
 
