@@ -153,10 +153,11 @@ def checkin_job(username, passwrd):
         #send discord messages
         try:
             if ss:
+                content = "<@1027111068704714833> Checked-in successfully" if username == "Muhammad Umair" else username + " Checked-in successfully"
                 logger.info(f"Screenshot captured for {username}")             
-                send_discord_message(f"{username} Checked-in successfully", image='checkin.png')
+                send_discord_message(content, image='checkin.png')
             else:
-                send_discord_message(f"{username} Checked-in successfully")
+                send_discord_message(content)
         except Exception as e:
             logger.error(f"An error occurred while sending message: {e}")
 
