@@ -194,6 +194,7 @@ def main(result = None):
         pprint(result)
 
     logger.info(f"All jobs completed successfully {result}")
-
+    send_discord_message(str(result))
+ 
 if __name__ == "__main__":
     main(result = dict())
