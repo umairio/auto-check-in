@@ -2,7 +2,9 @@ import os
 
 import requests
 
-from check_in import logger
+from logger import logger
+
+
 def send_discord_message(content, image=None):
     """
     Sends a message to a Discord channel via webhook with an optional file attachment.
@@ -32,12 +34,9 @@ def send_discord_message(content, image=None):
             response = requests.post(webhook_url, json=data)
         
         if response.status_code in [200, 204]:
-            logger.info(f"Message sent successfully: {content}")
+            logger.info(f"Discord message sent successfully")
             os.remove(image)
         else:
             logger.error(f"Failed to send message: {response.status_code} - {response.text}")
     except Exception as e:
         logger.error(f"An error occurred: {e}")
-
-if __name__ == "__main__":
-    send_discord_message("<@1027111068704714833> test message")

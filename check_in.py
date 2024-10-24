@@ -1,7 +1,6 @@
-import logging
 import os
 import time
-from logging.handlers import SMTPHandler
+from logger import logger
 from pprint import pprint
 
 from dotenv import load_dotenv
@@ -26,24 +25,6 @@ path = (
 )
 if "linux" in path:
     os.chmod(path, 0o755)
-
-logging.basicConfig(
-    filename="logs.log",
-    level=logging.INFO,
-    format="[%(asctime)s] [%(levelname)s] %(message)s",
-)
-mail_handler = SMTPHandler(
-    mailhost=("smtp.gmail.com", 587),
-    fromaddr=os.environ.get("MAIL_USERNAME"),
-    toaddrs="umairmateen55@gmail.com",
-    subject="Check-In Failed",
-    credentials=(os.environ.get("MAIL_USERNAME"), os.environ.get("MAIL_PASSWORD")),
-    secure=(),
-)
-mail_handler.setLevel(logging.ERROR)
-mail_handler.setFormatter(logging.Formatter("[%(asctime)s] [%(levelname)s] %(message)s"))
-logger = logging.getLogger()
-logger.addHandler(mail_handler)
 
 
 
@@ -70,6 +51,10 @@ def checkin_job(username, passwrd, user_id):
 
     """
     def checkin(driver):
+        """
+        :param driver: webdriver
+        :return: str, webdriver
+        """
         driver.execute_script("document.body.style.zoom='70%'")
         checkin = WebDriverWait(driver, 20).until(
             EC.element_to_be_clickable((
