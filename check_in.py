@@ -61,10 +61,11 @@ def initiate_driver():
     return driver
 
 
-def checkin_job(username, passwrd):
+def checkin_job(username, passwrd, user_id):
     """
     :param username: str
     :param passwrd: str
+    :param user_id: str
     :return: None 
 
     """
@@ -153,7 +154,7 @@ def checkin_job(username, passwrd):
         #send discord messages
         try:
             if ss:
-                content = "<@1027111068704714833> Checked-in successfully" if username == "Muhammad Umair" else username + " Checked-in successfully"
+                content = f"{user_id} Checked-in successfully"
                 logger.info(f"Screenshot captured for {username}")             
                 send_discord_message(content, image='checkin.png')
             else:
@@ -176,21 +177,22 @@ def main(result = None):
     passwords = os.environ.get("PASSWORDS", "").split(',')
     # emails = os.environ.get("EMAILS", "").split(',')
     leave_users = os.environ.get("LEAVE_USERS", "").split(',')
+    user_ids = os.environ.get("DISCORD_USER_IDS", "").split(',')
     if len(usernames) != len(passwords):
         logger.error("The number of emails does not match the number of passwords")
         return
-    data = list(zip(usernames, passwords))
+    data = list(zip(usernames, passwords, user_ids))
     if not result:
-        for username, password in data:
-            result[username] = checkin_job(username, password) if username not in leave_users else "leave"
+        for username, password, user_id in data:
+            result[username] = checkin_job(username, password, user_id) if username not in leave_users else "leave"
         pprint(result)
 
     # if failed retry
     if "Failed" in result.values():
         logger.info("Retrying failed jobs")
-        for username, password in data:
+        for username, password, user_id in data:
             if result[username] == "Failed":
-                result[username] = checkin_job(username, password)
+                result[username] = checkin_job(username, password, user_id)
         pprint(result)
 
     logger.info(f"All jobs completed successfully {result}")
