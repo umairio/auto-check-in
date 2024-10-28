@@ -137,15 +137,16 @@ def checkin_job(username, passwrd, user_id):
         ss = driver.save_screenshot("checkin.png")
 
         #send discord messages
-        try:
-            if ss:
-                content = f"{user_id} Checked-in successfully"
-                logger.info(f"Screenshot captured for {username}")             
-                send_discord_message(content, image='checkin.png')
-            else:
-                send_discord_message(content)
-        except Exception as e:
-            logger.error(f"An error occurred while sending message: {e}")
+        if result == "Success":
+            try:
+                if ss:
+                    content = f"{user_id} Checked-in successfully"
+                    logger.info(f"Screenshot captured for {username}")             
+                    send_discord_message(content, image='checkin.png')
+                else:
+                    send_discord_message(content)
+            except Exception as e:
+                logger.error(f"An error occurred while sending message: {e}")
 
         logger.info("Job completed successfully")
     except Exception as e:
@@ -182,7 +183,7 @@ def main(result = None):
         pprint(result)
 
     logger.info(f"All jobs completed successfully {result}")
-    send_discord_message(str(result))
+    # send_discord_message(str(result))
  
 if __name__ == "__main__":
     main(result = dict())
