@@ -138,7 +138,7 @@ def checkin_job(username, passwrd, user_id):
                     time.sleep(1)
                     action.move_to_element(checkout).perform()
                     time.sleep(1)
-                    result = "skip"
+                    result = "Already-checked-in"
                     logger.info(f"Already checked-in for {username}")
             except Exception as e:
                 logger.info(e)
@@ -178,6 +178,7 @@ def main(result = None):
     # emails = os.environ.get("EMAILS", "").split(',')
     leave_users = os.environ.get("LEAVE_USERS", "").split(',')
     user_ids = os.environ.get("DISCORD_USER_IDS", "").split(',')
+    print(leave_users)
     if len(usernames) != len(passwords):
         logger.error("The number of emails does not match the number of passwords")
         return
