@@ -1,7 +1,6 @@
-import logging
 import os
 import time
-from logging.handlers import SMTPHandler
+from logger import logger
 from pprint import pprint
 
 from dotenv import load_dotenv
@@ -26,24 +25,6 @@ path = (
 )
 if "linux" in path:
     os.chmod(path, 0o755)
-
-logging.basicConfig(
-    filename="logs.log",
-    level=logging.INFO,
-    format="[%(asctime)s] [%(levelname)s] %(message)s",
-)
-mail_handler = SMTPHandler(
-    mailhost=("smtp.gmail.com", 587),
-    fromaddr=os.environ.get("MAIL_USERNAME"),
-    toaddrs="umairmateen55@gmail.com",
-    subject="Check-In Failed",
-    credentials=(os.environ.get("MAIL_USERNAME"), os.environ.get("MAIL_PASSWORD")),
-    secure=(),
-)
-mail_handler.setLevel(logging.ERROR)
-mail_handler.setFormatter(logging.Formatter("[%(asctime)s] [%(levelname)s] %(message)s"))
-logger = logging.getLogger()
-logger.addHandler(mail_handler)
 
 
 
@@ -70,6 +51,10 @@ def checkin_job(username, passwrd, user_id):
 
     """
     def checkin(driver):
+        """
+        :param driver: webdriver
+        :return: str, webdriver
+        """
         driver.execute_script("document.body.style.zoom='70%'")
         checkin = WebDriverWait(driver, 20).until(
             EC.element_to_be_clickable((
@@ -152,15 +137,16 @@ def checkin_job(username, passwrd, user_id):
         ss = driver.save_screenshot("checkin.png")
 
         #send discord messages
-        try:
-            if ss:
-                content = f"{user_id} Checked-in successfully"
-                logger.info(f"Screenshot captured for {username}")             
-                send_discord_message(content, image='checkin.png')
-            else:
-                send_discord_message(content)
-        except Exception as e:
-            logger.error(f"An error occurred while sending message: {e}")
+        if result == "Success":
+            try:
+                if ss:
+                    content = f"{user_id} Checked-in successfully"
+                    logger.info(f"Screenshot captured for {username}")             
+                    send_discord_message(content, image='checkin.png')
+                else:
+                    send_discord_message(content)
+            except Exception as e:
+                logger.error(f"An error occurred while sending message: {e}")
 
         logger.info("Job completed successfully")
     except Exception as e:
@@ -197,7 +183,7 @@ def main(result = None):
         pprint(result)
 
     logger.info(f"All jobs completed successfully {result}")
-    send_discord_message(str(result))
+    # send_discord_message(str(result))
  
 if __name__ == "__main__":
     main(result = dict())
