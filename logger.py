@@ -5,7 +5,8 @@ import os
 logging.basicConfig(
     filename="logs.log",
     level=logging.INFO,
-    format="[%(asctime)s] [%(levelname)s] %(message)s",
+    format="[%(asctime)s] [%(lineno)d %(levelname)s] %(message)s",
+    datefmt="%m-%d %H:%M:%S"
 )
 mail_handler = SMTPHandler(
     mailhost=("smtp.gmail.com", 587),
@@ -19,3 +20,6 @@ mail_handler.setLevel(logging.ERROR)
 mail_handler.setFormatter(logging.Formatter("[%(asctime)s] [%(levelname)s] %(message)s"))
 logger = logging.getLogger()
 logger.addHandler(mail_handler)
+
+if __name__ == "__main__":
+    logger.info("This is an info message")

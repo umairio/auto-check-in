@@ -27,8 +27,6 @@ if "linux" in path:
     os.chmod(path, 0o755)
 
 
-
-
 def initiate_driver():
     """
     :return: webdriver
@@ -112,6 +110,10 @@ def checkin_job(username, passwrd, user_id):
         # logger.info("Redirecting to dashboard")
         try:
             result, driver = checkin(driver)
+        except StaleElementReferenceException:
+            logger.info("stale element reference, Refreshing the page")
+            driver.get("https://linkedmatrix.resourceinn.com/#/app/dashboard")
+            result, driver = checkin(driver)
         except TimeoutException:
             try:
                 checkout = WebDriverWait(driver, 20).until(
@@ -129,10 +131,6 @@ def checkin_job(username, passwrd, user_id):
                 logger.info(e)
                 result = "Failed"
                 return result
-        except StaleElementReferenceException:
-            logger.info("stale element reference, Refreshing the page")
-            driver.get("https://linkedmatrix.resourceinn.com/#/app/dashboard")
-            result, driver = checkin(driver)
         driver.execute_script("document.body.style.zoom='70%'")
         ss = driver.save_screenshot("checkin.png")
 
