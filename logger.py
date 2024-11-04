@@ -5,7 +5,7 @@ import os
 logging.basicConfig(
     filename="logs.log",
     level=logging.INFO,
-    format="[%(asctime)s] [%(lineno)d %(levelname)s] %(message)s",
+    format="[%(asctime)s] [%(filename)s %(lineno)d %(levelname)s] %(message)s",
     datefmt="%m-%d %H:%M:%S"
 )
 mail_handler = SMTPHandler(

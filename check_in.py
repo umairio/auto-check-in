@@ -156,7 +156,7 @@ def checkin_job(username, passwrd, user_id):
         return result
 
 
-def main(result = None):
+def main(result = dict()):
     usernames = os.environ.get("USERNAMES", "").split(',')
     passwords = os.environ.get("PASSWORDS", "").split(',')
     # emails = os.environ.get("EMAILS", "").split(',')
@@ -172,7 +172,7 @@ def main(result = None):
             result[username] = checkin_job(username, password, user_id) if username not in leave_users else "leave"
         pprint(result)
 
-    # if failed retry
+    # if failed result
     if "Failed" in result.values():
         logger.info("Retrying failed jobs")
         for username, password, user_id in data:
@@ -184,4 +184,4 @@ def main(result = None):
     # send_discord_message(str(result))
  
 if __name__ == "__main__":
-    main(result = dict())
+    main()
