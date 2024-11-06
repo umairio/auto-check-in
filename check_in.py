@@ -173,7 +173,7 @@ def main(result = dict()):
         pprint(result)
 
     # if failed result
-    if "Failed" in result.values():
+    while "Failed" in result.values():
         logger.info("Retrying failed jobs")
         for username, password, user_id in data:
             if result[username] == "Failed":
