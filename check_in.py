@@ -1,6 +1,7 @@
+import json
 import os
 import time
-from logger import logger
+import traceback
 from pprint import pprint
 
 from dotenv import load_dotenv
@@ -15,6 +16,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 
 from discobot import send_discord_message
+from logger import logger
 
 load_dotenv()
 
@@ -26,7 +28,7 @@ path = (
 if "linux" in path:
     os.chmod(path, 0o755)
 
-
+# path = os.environ.get("DRIVER_PATH")
 def initiate_driver():
     """
     :return: webdriver
@@ -115,41 +117,33 @@ def checkin_job(username, passwrd, user_id):
             driver.get("https://linkedmatrix.resourceinn.com/#/app/dashboard")
             result, driver = checkin(driver)
         except TimeoutException:
-            try:
-                checkout = WebDriverWait(driver, 20).until(
-                EC.element_to_be_clickable((By.XPATH,
-                    '//*[@id="dashboard-here"]/div/div[3]/mark-attendance/section/div[2]/div/div/ng-transclude/div/div[3]/button[2]',
-                )))
-                if checkout:
-                    action = ActionChains(driver)
-                    time.sleep(1)
-                    action.move_to_element(checkout).perform()
-                    time.sleep(1)
-                    result = "Already-checked-in"
-                    logger.info(f"Already checked-in for {username}")
-            except Exception as e:
-                logger.info(e)
-                result = "Failed"
-                return result
+            checkout = WebDriverWait(driver, 20).until(
+            EC.element_to_be_clickable((By.XPATH,
+                '//*[@id="dashboard-here"]/div/div[3]/mark-attendance/section/div[2]/div/div/ng-transclude/div/div[3]/button[2]',
+            )))
+            if checkout:
+                action = ActionChains(driver)
+                time.sleep(1)
+                action.move_to_element(checkout).perform()
+                time.sleep(1)
+                result = "Already-checked-in"
+                logger.info(f"Already checked-in for {username}")
         driver.execute_script("document.body.style.zoom='70%'")
         ss = driver.save_screenshot("checkin.png")
 
         #send discord messages
         if result == "Success":
-            try:
-                if ss:
-                    content = f"{user_id} Checked-in successfully"
-                    logger.info(f"Screenshot captured for {username}")             
-                    send_discord_message(content, image='checkin.png')
-                else:
-                    send_discord_message(content)
-            except Exception as e:
-                logger.error(f"An error occurred while sending message: {e}")
+            if ss:
+                content = f"{user_id} Checked-in successfully"
+                logger.info(f"Screenshot captured for {username}")             
+                send_discord_message(content, image='checkin.png')
+            else:
+                send_discord_message(content)
 
         logger.info("Job completed successfully")
     except Exception as e:
         result = "Failed"
-        logger.error(f"An error occurred for {username}: {e}")
+        logger.error(f"An error occurred for {username}: {traceback.format_exc()}")
     finally:
         driver.quit()
         logger.info("Webdriver closed")
@@ -159,10 +153,10 @@ def checkin_job(username, passwrd, user_id):
 def main(result = dict()):
     usernames = os.environ.get("USERNAMES", "").split(',')
     passwords = os.environ.get("PASSWORDS", "").split(',')
-    # emails = os.environ.get("EMAILS", "").split(',')
     leave_users = os.environ.get("LEAVE_USERS", "").split(',')
     user_ids = os.environ.get("DISCORD_USER_IDS", "").split(',')
-    print(leave_users)
+    # emails = os.environ.get("EMAILS", "").split(',')
+    if leave_users:print(leave_users)
     if len(usernames) != len(passwords):
         logger.error("The number of emails does not match the number of passwords")
         return
@@ -181,7 +175,7 @@ def main(result = dict()):
         pprint(result)
 
     logger.info(f"All jobs completed successfully {result}")
-    # send_discord_message(str(result))
+    send_discord_message("```python\n"+json.dumps(result, indent=4)+"```")
  
 if __name__ == "__main__":
     main()
