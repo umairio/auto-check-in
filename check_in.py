@@ -156,7 +156,7 @@ def main(result = dict()):
     leave_users = os.environ.get("LEAVE_USERS", "").split(',')
     user_ids = os.environ.get("DISCORD_USER_IDS", "").split(',')
     # emails = os.environ.get("EMAILS", "").split(',')
-    if leave_users:print(leave_users)
+    if len(leave_users[0]):print(leave_users)
     if len(usernames) != len(passwords):
         logger.error("The number of emails does not match the number of passwords")
         return
