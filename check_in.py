@@ -163,7 +163,7 @@ def main(result = dict()):
     data = list(zip(usernames, passwords, user_ids))
     if not result:
         for username, password, user_id in data:
-            result[username] = checkin_job(username, password, user_id) if username not in leave_users else "leave"
+            result[username] = checkin_job(username, password, user_id) if username not in leave_users else "Leave"
         pprint(result)
 
     # if failed result
