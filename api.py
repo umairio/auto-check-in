@@ -96,19 +96,20 @@ if __name__ == "__main__":
     if not result:
         for username, password, user_id in data:
             if username not in leave_users:
-                result[username] = CheckInAPI(username, password).checkin()
+                result[user_id] = CheckInAPI(username, password).checkin()
             else:
-                result[username] = "Leave"
+                result[user_id] = "Leave"
         pprint(result)
 
     # if failed result
     while "Failed" in result.values():
         logger.info("Retrying failed jobs")
         for username, password, user_id in data:
-            if result[username] == "Failed":
-                result[username] = CheckInAPI(username, password).checkin()
+            if result[user_id] == "Failed":
+                result[user_id] = CheckInAPI(username, password).checkin()
         pprint(result)
-    send_discord_message("```python\n"+json.dumps(result, indent=4)+"```")
+    
+    send_discord_message(json.dumps(result, indent=4).replace('"', ''))
 
     logger.info(f"All jobs completed successfully {result}")    
 
