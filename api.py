@@ -99,7 +99,6 @@ if __name__ == "__main__":
                 result[user_id] = CheckInAPI(username, password).checkin()
             else:
                 result[user_id] = "Leave"
-        pprint(result)
 
     # if failed result
     while "Failed" in result.values():
@@ -107,7 +106,6 @@ if __name__ == "__main__":
         for username, password, user_id in data:
             if result[user_id] == "Failed":
                 result[user_id] = CheckInAPI(username, password).checkin()
-        pprint(result)
     
     send_discord_message(json.dumps(result, indent=4).replace('"', ''))
 
