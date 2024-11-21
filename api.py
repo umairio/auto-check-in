@@ -109,7 +109,7 @@ if __name__ == "__main__":
     
     send_discord_message(json.dumps(result, indent=4).replace('"', ''))
 
-    logger.info(f"All jobs completed successfully {result}")    
+    logger.info(f"All jobs completed successfully {json.dumps(result, indent=4)}")    
 
 
 # def time_waste():
