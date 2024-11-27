@@ -38,8 +38,8 @@ class CheckInAPI:
         if res.status_code != 200:
             raise Exception("Login failed")
         self.access_token = res.json().get("data").get("access_token")
-        self.employment_id = res.json().get("data").get("user").get("employment_id")
         self.cookies = res.cookies.get_dict() #{'laravel_session': 'P1AqDqbULorKaKUzq54i1vkLYp4ba1tGJsPxZzl7'}
+        # self.employment_id = res.json().getx("data").get("user").get("employment_id")
         # <RequestsCookieJar[Cookie(version=0, name='laravel_session', value='P1AqDqbULorKaKUzq54i1vkLYp4ba1tGJsPxZzl7', port=None, port_specified=False, domain='linkedmatrix.resourceinn.com', domain_specified=False, domain_initial_dot=False, path='/', path_specified=True, secure=False, expires=1731418480, discard=False, comment=None, comment_url=None, rest={'httponly': None}, rfc2109=False)]>
 
 
