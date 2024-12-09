@@ -1,9 +1,10 @@
 import os
-
+from dotenv import load_dotenv
 import requests
 
 from logger import logger
 
+load_dotenv()
 
 def send_discord_message(content, image=None):
     """
