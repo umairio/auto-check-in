@@ -1,8 +1,5 @@
-import requests, os, json
+import requests
 from logger import logger
-from pprint import pprint
-from discobot import send_discord_message
-
 
 
 class CheckInAPI:
@@ -74,42 +71,12 @@ Content-Disposition: form-data; name="mark_attendance"
 """
 
         res = requests.post(self.checkin_url, headers=headers, data=data)
-        logger.info(f"checkin for {username}: {res.status_code}")
+        logger.info(f"checkin for {self.username}: {res.status_code}")
         if res.status_code == 200 and 'data' in res.json():
             return "Success"
         else:
             return "Failed"
 
-
-if __name__ == "__main__":
-    result = dict()
-    usernames = os.environ.get("USERNAMES", "").split(',')
-    passwords = os.environ.get("PASSWORDS", "").split(',')
-    leave_users = os.environ.get("LEAVE_USERS", "").split(',')
-    user_ids = os.environ.get("DISCORD_USER_IDS", "").split(',')
-    # emails = os.environ.get("EMAILS", "").split(',')
-    if len(leave_users[0]):print(leave_users)
-    if len(usernames) != len(passwords):
-        logger.error("The number of emails does not match the number of passwords")
-        raise Exception
-    data = list(zip(usernames, passwords, user_ids))
-    if not result:
-        for username, password, user_id in data:
-            if username not in leave_users:
-                result[user_id] = CheckInAPI(username, password).checkin()
-            else:
-                result[user_id] = "Leave"
-
-    # if failed result
-    while "Failed" in result.values():
-        logger.info("Retrying failed jobs")
-        for username, password, user_id in data:
-            if result[user_id] == "Failed":
-                result[user_id] = CheckInAPI(username, password).checkin()
-    
-    send_discord_message(json.dumps(result, indent=4).replace('"', ''))
-
-    logger.info(f"All jobs completed successfully {json.dumps(result, indent=4)}")    
 
 
 # def time_waste():
