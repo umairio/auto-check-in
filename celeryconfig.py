@@ -4,7 +4,8 @@ from celery import Celery
 from celery.schedules import crontab
 from dotenv import load_dotenv
 
-from check_in import main
+from main import main
+import asyncio
 
 load_dotenv()
 
@@ -26,4 +27,4 @@ app.conf.enable_utc = False
 
 @app.task
 def do_checkin():
-    main()
+    asyncio.run(main(dict()))
