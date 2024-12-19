@@ -6,3 +6,5 @@ webdriver-manager==4.0.1
 websocket-client==1.8.0
 yagmail
 requests
+dateparser
+discord
