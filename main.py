@@ -30,31 +30,27 @@ async def main(result):
     for author, content in messages:
         try:
             if "-" in content:
-                # Split the content into two parts
                 start_date, end_date = map(str.strip, content.split("-", 1))
                 
                 start_date = parse(start_date.strip(), settings={'FUZZY': True}).date()
                 end_date = parse(end_date.strip(), settings={'FUZZY': True}).date()
-
                 if start_date <= datetime.now().date() <= end_date:
-                    logger.info("Leave for", author.name, content)
+                    logger.info(f"Leave for {author.name} {content}")
                     leave_user_ids.append(f"<@{author.id}>")
 
             else:
-                message_date = parse(content.strip(), settings={'FUZZY': True}).date()
-
+                message_date = parse(content.strip(), settings={'FUZZY': True})
+                message_date = message_date.date() if message_date else None
                 if datetime.now().date() == message_date:
-                    logger.info("Leave for", author.name, content)
+                    logger.info(f"Leave for {author.name}, {content}")
                     leave_user_ids.append(f"<@{author.id}>")
         except ValueError:
             logger.info(f"Skipping message from {author.name}: Unable to parse {content} as a date or range.")
 
+    logger.info(f"Leave user IDs: {leave_user_ids}")
     if not result:
         for username, password, user_id in data:
-            if user_id in leave_user_ids:
-                result[user_id] = "Leave"
-            else:
-                result[user_id] = CheckInAPI(username, password).checkin()
+                result[user_id] = "Leave" if user_id in leave_user_ids else CheckInAPI(username, password).checkin()
 
     MAX_RETRIES = 3
     retries = 0

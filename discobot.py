@@ -57,7 +57,7 @@ async def read_channel(server_name, channel_name, token=os.environ.get("DISCORD_
 
     @client.event
     async def on_ready():
-        print(f"Logged in as {client.user}")
+        logger.info(f"Logged in as {client.user}")
 
         # Get the guild and channel
         guild = discord.utils.get(client.guilds, name=server_name)
@@ -68,8 +68,10 @@ async def read_channel(server_name, channel_name, token=os.environ.get("DISCORD_
         async for message in channel.history(limit=limit):
             result.append((message.author, message.content))
 
-        print(f"Fetched {len(result)} messages.")
+        logger.info(f"Fetched {len(result)} messages.")
         await client.close()  # Stop the bot after fetching messages
 
     await client.start(token)
+    if not client.is_closed():
+        await client.close()  
     return result
