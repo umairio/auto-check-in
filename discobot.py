@@ -1,9 +1,11 @@
 import os
-from dotenv import load_dotenv
-import requests
+
 import discord
-import asyncio
+import requests
+from dotenv import load_dotenv
+
 from logger import logger
+
 load_dotenv()
 
 
@@ -15,11 +17,11 @@ def send_discord_message(content, image=None):
     :param image: str - Optional path to the local image file to attach.
     """
     webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
-    
+
     if not webhook_url:
         logger.error("Webhook URL not set in environment variables.")
         return
-    
+
     data = {
         "content": content
     }
@@ -34,9 +36,9 @@ def send_discord_message(content, image=None):
                 )
         else:
             response = requests.post(webhook_url, json=data)
-        
+
         if response.status_code in [200, 204]:
-            logger.info(f"Discord message sent successfully")
+            logger.info("Discord message sent successfully")
             os.remove(image) if image else None
         else:
             logger.error(f"Failed to send message: {response.status_code} - {response.text}")
@@ -73,5 +75,5 @@ async def read_channel(server_name, channel_name, token=os.environ.get("DISCORD_
 
     await client.start(token)
     if not client.is_closed():
-        await client.close()  
+        await client.close()
     return result

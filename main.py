@@ -1,39 +1,36 @@
-from discobot import send_discord_message, read_channel
-from dateparser import parse
-from datetime import datetime
 import asyncio
-import os, json
-from logger import logger
+import json
+import os
+from datetime import datetime
+
+from dateparser import parse
+
 from api import CheckInAPI
+from discobot import read_channel, send_discord_message
+from logger import logger
 
 
 async def main(result):
-    required_env_vars = ["DISCORD_BOT_TOKEN", "USERNAMES", "PASSWORDS", "DISCORD_USER_IDS"]
-    for var in required_env_vars:
-        if not os.environ.get(var):
-            logger.error(f"Missing required environment variable: {var}")
-            return 1
-
-    usernames = os.environ.get("USERNAMES", "").split(',')
-    passwords = os.environ.get("PASSWORDS", "").split(',')
-    leave_user_ids = os.environ.get("LEAVE_USERS", "").split(',')
-    user_ids = os.environ.get("DISCORD_USER_IDS", "").split(',')
-
-    if len(usernames) != len(passwords):
-        logger.error("The number of emails does not match the number of passwords")
+    if not os.environ.get("DISCORD_BOT_TOKEN"):
+        logger.error("DISCORD_BOT_TOKEN not set in env")
         return 1
 
-    data = list(zip(usernames, passwords, user_ids))
+    if os.path.isfile('creds.json'):
+        with open('creds.json', 'r') as file:
+            data = json.load(file)
+    else:
+        logger.error("Missing creds.json")
+        return 1
 
+    leave_user_ids = []
     messages = await read_channel("Apna Server", "leave-request")
-
     for author, content in messages:
         try:
             if "-" in content:
                 start_date, end_date = map(str.strip, content.split("-", 1))
-                
                 start_date = parse(start_date.strip(), settings={'FUZZY': True}).date()
                 end_date = parse(end_date.strip(), settings={'FUZZY': True}).date()
+
                 if start_date <= datetime.now().date() <= end_date:
                     logger.info(f"Leave for {author.name} {content}")
                     leave_user_ids.append(f"<@{author.id}>")
@@ -49,16 +46,18 @@ async def main(result):
 
     logger.info(f"Leave user IDs: {leave_user_ids}")
     if not result:
-        for username, password, user_id in data:
-                result[user_id] = "Leave" if user_id in leave_user_ids else CheckInAPI(username, password).checkin()
+        for user in data:
+            id, creds = next(iter(user.items()))
+            result[id] = "Leave" if user in leave_user_ids else CheckInAPI(*creds).checkin()
 
     MAX_RETRIES = 3
     retries = 0
     while "Failed" in result.values() and retries < MAX_RETRIES:
         logger.info(f"Retrying failed jobs (Attempt {retries + 1}/{MAX_RETRIES})")
-        for username, password, user_id in data:
-            if result[user_id] == "Failed":
-                result[user_id] = CheckInAPI(username, password).checkin()
+        for user in data:
+            id, creds = next(iter(user.items()))
+            if result[id] == "Failed":
+                result[id] = CheckInAPI(*creds).checkin()
         retries += 1
 
     if "Failed" in result.values():

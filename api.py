@@ -1,4 +1,5 @@
 import requests
+
 from logger import logger
 
 
@@ -6,7 +7,7 @@ class CheckInAPI:
     def __init__(self, username: str, password: str):
         self.username = username
         self.password = password
-        self.login_url =  "https://linkedmatrix.resourceinn.com/api/v1/oauth/webLogin"
+        self.login_url = "https://linkedmatrix.resourceinn.com/api/v1/oauth/webLogin"
         self.checkin_url = "https://linkedmatrix.resourceinn.com/api/v1/directives/markAttendance"
         self.access_token = str()
         self.employment_id = str()
@@ -27,7 +28,7 @@ class CheckInAPI:
         }
 
         data = {
-            "email" : self.username,
+            "email": self.username,
             "password": self.password
         }
 
@@ -36,7 +37,7 @@ class CheckInAPI:
         if res.status_code != 200:
             raise Exception("Login failed")
         self.access_token = res.json().get("data").get("access_token")
-        self.cookies = res.cookies.get_dict() #{'laravel_session': 'P1AqDqbULorKaKUzq54i1vkLYp4ba1tGJsPxZzl7'}
+        self.cookies = res.cookies.get_dict()  # {'laravel_session': 'P1AqDqbULorKaKUzq54i1vkLYp4ba1tGJsPxZzl7'}
         # self.employment_id = res.json().getx("data").get("user").get("employment_id")
         # <RequestsCookieJar[Cookie(version=0, name='laravel_session', value='P1AqDqbULorKaKUzq54i1vkLYp4ba1tGJsPxZzl7', port=None, port_specified=False, domain='linkedmatrix.resourceinn.com', domain_specified=False, domain_initial_dot=False, path='/', path_specified=True, secure=False, expires=1731418480, discard=False, comment=None, comment_url=None, rest={'httponly': None}, rfc2109=False)]>
 
@@ -61,7 +62,7 @@ class CheckInAPI:
             "version-code": "417",
             "version-no": "4.1.7",
         }
-             
+
         data = """------WebKitFormBoundaryLlz6sJ56J5TaAiKJ
 Content-Disposition: form-data; name="mark_attendance"
 
@@ -76,22 +77,3 @@ Content-Disposition: form-data; name="mark_attendance"
             return "Success"
         else:
             return "Failed"
-
-
-
-# def time_waste():
-#     false = False
-#     true = True
-#     null = None
-#     identifier = f"{datetime.now().date().strftime('%Y%m%d')}-{self.employment_id}"
-#     breaks = [{"id": 1, "name": "Default", "start": "Break Out", "end": "Break In", "description": null, "created_at": "2020-06-09 12:52:50", "updated_at": "2020-06-09 12:52:50", "deleted_at": null, "icon": null, "start_color": null, "end_color": null}, {"id": 2, "name": "Personal", "start": "Personal Out", "end": "Personal In", "description": null, "created_at": "2020-06-09 12:52:50", "updated_at": "2020-06-09 12:52:50", "deleted_at": null, "icon": null, "start_color": null, "end_color": null}, {"id": 3, "name": "Tea/Smoking", "start": "Tea/Smoking Out", "end": "Tea/Smoking In", "description": null, "created_at": "2020-06-09 12:52:50", "updated_at": "2020-06-09 12:52:50", "deleted_at": null, "icon": null, "start_color": null, "end_color": null}, {"id": 4, "name": "Official Work", "start": "Official Work Out", "end": "Official Work In", "description": null, "created_at": "2020-06-09 12:52:50", "updated_at": "2020-06-09 12:52:50", "deleted_at": null, "icon": null, "start_color": null, "end_color": null}, {"id": 5, "name": "Lunch", "start": "Lunch Out", "end": "Lunch In", "description": null, "created_at": "2020-06-09 12:52:50", "updated_at": "2020-06-09 12:52:50", "deleted_at": null, "icon": null, "start_color": null, "end_color": null}, {"id": 6, "name": "Prayer", "start": "Prayer Out", "end": "Prayer In", "description": null, "created_at": "2020-06-09 12:52:50", "updated_at": "2020-06-09 12:52:50", "deleted_at": null, "icon": null, "start_color": null, "end_color": null}, {"id": 7, "name": "Other", "start": "Other Out", "end": "Other In", "description": null, "created_at": "2020-06-09 12:52:50", "updated_at": "2020-06-09 12:52:50", "deleted_at": null, "icon": null, "start_color": null, "end_color": null}]
-#     time_slot = {"id": 1, "code": "TS-00001", "day_changed": true, "start_buffer_minutes": 0, "end_buffer_minutes": 0, "punch_end_buffer_minutes": 59, "is_overtime_applicable": true, "is_active": true, "created_at": "2021-07-05 10:25:42", "updated_at": "2023-11-27 07:27:57", "deleted_at": null, "company_id": 1, "name": "General Timing ( Flexible Shift ) Short OT", "duration_minutes": 1320, "start": "2023-11-27 04:00:00", "end": "2023-11-28 02:00:00", "is_flexible": true, "flexible_minutes": 540, "bg_colour": "#008f35", "font_colour": "#000000", "is_full_overtime_slot": false, "is_night": false, "punch_start_buffer_minutes": 60, "flexible_hours": 9, "identifier": "TS-00001 - General Timing ( Flexible Shift ) Short OT (09:00 am - 07:00 am)", "status": "Active", "status_class": "bg-success"}
-#     shift = {"id": 3562, "created_at": "2024-01-01 06:43:16", "updated_at": "2024-01-01 06:43:16", "deleted_at": null, "employment_id": self.employment_id, "company_id": 1, "time_slot_id": 1, "date": str(datetime.now().date()) +" 00:00:00", "bg_colour": "#008f35", "font_colour": "#000000", "over_time_hours": 0, "start_datetime":  str(datetime.now().date())+" 04:00:00", "end_datetime": str(datetime.now().date()+timedelta(days = 1))+" 02:00:00", "department_hierarchy_code": "", "is_default": false, "expected_minutes": 540, "is_full_overtime_shift": false, "geo_fence_ids": [], "identifier": identifier, "is_work_from_home": false, "is_optional": false, "shift_tags": [], "time_slot": time_slot}
-#     payload = {"breaks": breaks, "is_checkin_time": false, "checkin_time": "", "checkin_address": "", "is_checkout_time": false, "checkout_time": "", "checkout_address": "", "break_id": null, "is_break": false, "break_time": "", "is_pic_required": false, "shift": shift, "geo_fences": [], "mark_checkin": true}
-#     data = f"""------WebKitFormBoundaryLlz6sJ56J5TaAiKJ
-# Content-Disposition: form-data; name="mark_attendance"
-
-# {json.dumps(payload)}
-
-# ------WebKitFormBoundaryLlz6sJ56J5TaAiKJ--
-# """

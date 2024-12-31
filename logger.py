@@ -1,6 +1,4 @@
 import logging
-import os
-from logging.handlers import SMTPHandler
 import colorlog
 
 # Create a formatter for the file logs

@@ -1,3 +1,4 @@
+import asyncio
 import os
 
 from celery import Celery
@@ -5,13 +6,12 @@ from celery.schedules import crontab
 from dotenv import load_dotenv
 
 from main import main
-import asyncio
 
 load_dotenv()
 
 
-hours = str(os.environ.get("HOUR"))
-mins = str(os.environ.get("MINUTE"))
+hours = os.environ.get("HOUR")
+mins = os.environ.get("MINUTE")
 
 
 app = Celery("check_in", broker="redis://redis:6379/0")
@@ -24,6 +24,7 @@ app.conf.beat_schedule = {
 }
 app.conf.timezone = 'Asia/Karachi'
 app.conf.enable_utc = False
+
 
 @app.task
 def do_checkin():
